@@ -6,7 +6,7 @@ const router = express.Router();
 // Protected routes for user access
 // router.get('/profile', protect, userController.getProfile);
 router.post('/register', userController.register);
-router.post('/login', protect, userController.login);
+router.post('/login',  userController.login);
 router.post('/logout', userController.logout);
 
 // Admin-only route
