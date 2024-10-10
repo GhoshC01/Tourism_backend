@@ -11,7 +11,10 @@ const router = express.Router();
 // Routes protected by authentication and admin check
 router.post('/',  tourController.addTour);
 // router.get('/', adminOnly, tourController.getAllTours);
+router.get('/', tourController.getAllTours);
 // router.put('/:id', adminOnly, upload, tourController.updateTour);
+router.put('/:id', tourController.updateTour);
 // router.delete('/:id', adminOnly, tourController.deleteTour);
+router.delete('/:id',tourController.deleteTour);
 
 module.exports = router;

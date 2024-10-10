@@ -6,31 +6,41 @@ const { v4: uuidv4 } = require('uuid');
 // Multer configuration for file uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, './uploads/');
+        cb(null, './uploads/');  // Ensure you have an 'uploads' directory
     },
     filename: (req, file, cb) => {
-        cb(null, uuidv4() + path.extname(file.originalname)); // Unique file names
+        const uniqueFilename = uuidv4() + path.extname(file.originalname); // Generate unique filenames
+        cb(null, uniqueFilename);
     }
 });
-const upload = multer({ storage }).array('images', 10); // Up to 10 images
-console.log(upload)
+
+// Multer middleware for handling multiple image uploads (up to 10)
+const upload = multer({ storage }).array('images', 10);
 
 // Admin: Add a new tour
 exports.addTour = (req, res) => {
     upload(req, res, async (err) => {
         if (err) {
-            return res.status(500).json({ error: err.message ,errors:"file not upload" });
+            return res.status(500).json({ error: err.message, errors: "File not uploaded" });
         }
 
         try {
-            const images = req.files.map(file => file.path);
-            console.log(images)
-            const Tours = await Tour.create({
+            // Check if any files were uploaded
+            if (!req.files || req.files.length === 0) {
+                return res.status(400).json({ error: "No files uploaded" });
+            }
+
+            // Map the uploaded files to get their paths
+            const images = req.files.map(file => file.path); // Store image paths (relative)
+
+            // Create the new tour with the uploaded images and other data
+            const newTour = await Tour.create({
                 ContryName: req.body.ContryName,
-                images,
+                image: images,  // Make sure this matches your schema
                 description: req.body.description,
             });
-            res.status(201).json(Tours);
+
+            res.status(201).json(newTour);  // Send the newly created tour as response
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
@@ -38,35 +48,56 @@ exports.addTour = (req, res) => {
 };
 
 
+
 // Admin: Get all tours
 exports.getAllTours = async (req, res) => {
     try {
         const tours = await Tour.find();
-        res.status(200).json(tours);
+        if (tours) {
+            res.status(200).json(tours);
+        } else {
+            res.status(401).json("Tour not founds")
+        }
+
     } catch (error) {
         res.status(500).json({ error: 'Error fetching tours' });
     }
 };
+exports.updateTour = (req, res) => {
+    // Use multer middleware to handle file uploads
+    upload(req, res, async (err) => {
+        if (err) {
+            return res.status(500).json({ error: err.message, message: "File upload failed" });
+        }
 
-// Admin: Update a tour by ID
-exports.updateTour = async (req, res) => {
-    const { ContryName, description } = req.body;
-    const images = req.files ? req.files.map(file => file.path) : undefined;
+        const { ContryName, description } = req.body;
+        const newImages = req.files ? req.files.map(file => file.path) : [];
 
-    try {
-        const tour = await Tour.findById(req.params.id);
-        if (!tour) return res.status(404).json({ error: 'Tour not found' });
+        try {
+            // Find the tour by ID
+            const tour = await Tour.findById(req.params.id);
+            if (!tour) {
+                return res.status(404).json({ error: 'Tour not found' });
+            }
 
-        // Update fields
-        tour.ContryName = ContryName || tour.ContryName;
-        tour.description = description || tour.description;
-        if (images) tour.image = images;  // Only update images if provided
+            // Update fields if provided
+            if (ContryName) tour.ContryName = ContryName;
+            if (description) tour.description = description;
 
-        await tour.save();
-        res.status(200).json(tour);
-    } catch (error) {
-        res.status(500).json({ error: 'Error updating tour' });
-    }
+            // Append new images to the existing ones (keep the old images)
+            if (newImages.length > 0) {
+                tour.image = [...tour.image, ...newImages];  // Merge old and new images
+            }
+
+            // Save the updated tour document
+            const updatedTour = await tour.save();
+
+            // Respond with the updated tour document
+            res.status(200).json({ message: "Tour updated successfully", tour: updatedTour });
+        } catch (error) {
+            res.status(500).json({ error: 'Error updating tour', details: error.message });
+        }
+    });
 };
 
 // Admin: Delete a tour by ID
@@ -75,7 +106,7 @@ exports.deleteTour = async (req, res) => {
         const tour = await Tour.findById(req.params.id);
         if (!tour) return res.status(404).json({ error: 'Tour not found' });
 
-        await tour.remove();
+        await Tour.findByIdAndDelete(req.params.id);
         res.status(200).json({ message: 'Tour deleted successfully' });
     } catch (error) {
         res.status(500).json({ error: 'Error deleting tour' });
