@@ -11,7 +11,11 @@ router.post('/logout', userController.logout);
 
 // Admin-only route
 // router.get('/admin', protect, adminOnly, userController.adminDashboard);
-router.post('admin/login',protect, adminOnly, userController.login);
+router.post('/admin/login', userController.login);
+router.get('/admin/getAllUser', userController.getAllUsers);
+router.get('/admin/getOneUser', userController.getUserById);
+router.put('/admin/updateUser', userController.updateUser);
+router.delete('/admin/deleteUser', userController.deleteUser);
 
 
 
