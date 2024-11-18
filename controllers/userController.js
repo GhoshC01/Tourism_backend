@@ -13,7 +13,6 @@ exports.register = async (req, res) => {
         res.status(400).json({ error: 'Error registering user' });
     }
 };
-// 7797704054
 // Login user
 exports.login = async (req, res) => {
     const { email, password } = req.body;
