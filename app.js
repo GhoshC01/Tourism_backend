@@ -18,7 +18,7 @@ app.use(cors());
 
 app.use('/uploads', express.static('uploads'));
 
-app.use('/api/role', userRoutes);
+app.use('/api', userRoutes);
 app.use('/api/tour', tourRoutes);
 app.use('/api/blog', blogRoutes);
 
